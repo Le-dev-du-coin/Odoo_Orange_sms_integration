@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+orange_sms_integration.access_sms_orange,access_sms_orange,orange_sms_integration.model_sms_orange,base.group_user,1,1,1,1
+orange_sms_integration.access_sms_receipt,access_sms_receipt,orange_sms_integration.model_sms_receipt,base.group_user,1,1,1,0
+orange_sms_integration.access_sms_test,access_sms_test,orange_sms_integration.model_sms_test,base.group_user,1,1,1,0

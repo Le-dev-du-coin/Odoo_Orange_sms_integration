@@ -1,4 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Vue Formulaire pour la configuration SMS -->
     <record id="view_sms_config_settings_form" model="ir.ui.view">
         <field name="name">sms.config.settings.form</field>
         <field name="model">sms.orange</field>
@@ -7,12 +9,94 @@
                 <sheet>
                     <group>
                         <field name="name"/>
+                        <field name="client_id"/>
+                        <field name="client_secret"/>
                         <field name="api_key"/>
                         <field name="sender_name"/>
                         <field name="sender_number"/>
+                        <field name="access_token"/>
+                        <field name="token_expiration"/>
+                    </group>
+                    <group>
+                        <button name="check_sms_balance" type="object" string="Vérifier le solde SMS"/>
                     </group>
                 </sheet>
             </form>
         </field>
     </record>
+
+    <!-- Vue Tree pour la configuration SMS -->
+    <record id="view_sms_config_settings_tree" model="ir.ui.view">
+        <field name="name">sms.config.settings.tree</field>
+        <field name="model">sms.orange</field>
+        <field name="arch" type="xml">
+            <tree string="Configuration de l'API Orange SMS">
+                <field name="name"/>
+                <field name="sender_name"/>
+                <field name="sender_number"/>
+                <field name="token_expiration"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Tree pour les accusés de réception -->
+    <record id="view_sms_receipt_tree" model="ir.ui.view">
+        <field name="name">sms.receipt.tree</field>
+        <field name="model">sms.receipt</field>
+        <field name="arch" type="xml">
+            <tree string="Accusés de réception SMS">
+                <field name="sms_id"/>
+                <field name="recipient_phone_number"/>
+                <field name="delivery_status"/>
+                <field name="received_at"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue formulaire pour le test de message SMS -->
+     <record id="view_sms_test_form" model="ir.ui.view">
+        <field name="name">sms.test.form</field>
+        <field name="model">sms.test</field>
+        <field name="arch" type="xml">
+            <form string="Test d'envoi de SMS">
+                <sheet>
+                    <group>
+                        <field name="phone_number" placeholder="+223XXXXXXXX" required="1"/>
+                        <field name="message" required="1"/>
+                    </group>
+                    <footer>
+                        <button name="send_test_sms" type="object" string="Envoyer SMS" class="btn-primary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action pour les accusés de réception -->
+    <record id="action_sms_receipt" model="ir.actions.act_window">
+        <field name="name">Accusés de réception SMS</field>
+        <field name="res_model">sms.receipt</field>
+        <field name="view_mode">tree</field>
+    </record>
+
+    <!-- Nouvelle action pour la configuration SMS avec vue tree et form -->
+    <record id="action_sms_config" model="ir.actions.act_window">
+        <field name="name">Configuration SMS Orange</field>
+        <field name="res_model">sms.orange</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Action pour le test de SMS -->
+    <record id="action_sms_test" model="ir.actions.act_window">
+        <field name="name">Test d'envoi de SMS</field>
+        <field name="res_model">sms.test</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field> <!-- Ouvre dans une nouvelle fenêtre -->
+    </record>
+
+    <!-- Menus -->
+    <menuitem id="menu_sms" name="SMS" sequence="10"/>
+    <menuitem id="menu_sms_config" name="Configuration SMS Orange" parent="menu_sms" action="action_sms_config" sequence="1"/>
+    <menuitem id="menu_sms_receipts" name="Accusés de réception" parent="menu_sms" action="action_sms_receipt" sequence="2"/>
+    <menuitem id="menu_sms_test" name="Test d'envoi de SMS" parent="menu_sms" action="action_sms_test" sequence="3"/>
 </odoo>

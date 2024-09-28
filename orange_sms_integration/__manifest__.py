@@ -11,11 +11,11 @@
     'license': 'AGPL-3',
     'depends': ['base', 'sms'],
     'data': [
-        'security/ir.access.model.csv',
         'views/sms_config_settings_views.xml',
-        'sms_template_views.xml',
+        'views/sms_template_views.xml',
+        'security/ir.model.access.csv',
     ],
     'installable': True,
-    'application': False,
+    'application': True,
     'auto_install': False
 }
