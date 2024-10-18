@@ -10,10 +10,10 @@
     'website': 'www.social360mali.com',
     'license': 'AGPL-3',
     'depends': ['base', 'sms'],
-    'data': [
-        'views/sms_config_settings_views.xml',
-        'views/sms_template_views.xml',
-        'security/ir.model.access.csv',
+    "data": [
+        "views/sms_config_settings_views.xml",
+        "security/ir.model.access.csv",
+        "views/sms_sender_views.xml"
     ],
     'installable': True,
     'application': True,

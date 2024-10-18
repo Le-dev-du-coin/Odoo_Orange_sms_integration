@@ -1,4 +1,4 @@
-from odoo import models, fields
+from odoo import models, fields, _
 from odoo.exceptions import UserError
 
 class SMSTest(models.Model):
@@ -20,6 +20,15 @@ class SMSTest(models.Model):
         
         # Envoyer le SMS en utilisant la configuration
         try:
-            api_config.send_sms(int(self.phone_number), self.message)
+            api_config._send_sms(self.phone_number, self.message)
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('SMS Envoyé'),
+                    'message': _('Le SMS a été envoyé avec succès.'),
+                    'sticky': False,
+                }
+            }
         except Exception as e:
             raise UserError(f"Erreur lors de l'envoi du SMS : {str(e)}")

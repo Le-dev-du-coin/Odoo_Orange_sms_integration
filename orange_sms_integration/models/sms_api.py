@@ -1,99 +1,138 @@
 import requests
-import base64
-import time
-from odoo import models, fields, api
+import re
+from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
-class SMSApi(models.Model):
-    _inherit = 'sms.api'
 
-    _name = 'sms.orange'
-    _description = 'Orange SMS API Integration'
+class SmsApiOrangeBase(models.AbstractModel):
+    _name = 'sms.api.orange.base'
+    _inherit = 'sms.api' 
+    _description = 'Base Orange SMS API Integration'
 
-    name = fields.Char(string='Nom')
-    client_id = fields.Char(string='ID du client', required=True)
-    client_secret = fields.Char('Client secret', required=True)
-    api_key = fields.Char('Clé API')
-    sender_name = fields.Char('Nom Expediteur')
-    sender_number = fields.Char('Numéro Expediteur')
-    access_token = fields.Char('Access Token')
-    token_expiration = fields.Float('Temps d\'expiration du Token', help="Compteur pour expiration du Token")
+    def validate_number(self, number):
+       
+        if not isinstance(number, str) or not re.match(r"^\d{1,3}\d{9,12}$", number):
+            raise UserError(_("Le numéro de téléphone doit être une chaîne de caractères et inclure un indicatif valide (par exemple : 223XXXXXXXX)."))
 
-    def get_access_token(self):
-        """
-        Obtention du nouveau Token si le Token est manquant ou expiré.
-        """
-        current_time = time.time()
-        if not self.access_token or current_time >= self.token_expiration:
-            auth_string = f"{self.client_id}:{self.client_secret}"
-            auth_header = base64.b64encode(auth_string.encode()).decode()
 
-            url = "https://api.orange.com/oauth/v3/token"
-            headers = {
-                "Authorization": f"Basic {auth_header}",
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Accept": "application/json"
-            }
-            data = {
-                "grant_type": "client_credentials"
-            }
-            response = requests.post(url, headers=headers, data=data)
+        # Vérification pour s'assurer que le numéro est compris entre 10 et 15 chiffres
+        if not (9 <= len(number) <= 15):
+            raise UserError(_("Le numéro de téléphone doit être entre 9 et 15 caracteres."))
 
-            if response.status_code == 200:
-                token_data = response.json()
-                self.access_token = token_data.get('access_token')
-                self.token_expiration = time.time() + token_data.get('expires_in', 3600) - 60  # Expiration moins 1 min
-            else:
-                raise UserError(f"Erreur lors de la récupération du token : {response.text}")
+    def _send_sms(self, number, message):
+        """Redéfinition de la méthode _send_sms pour envoyer un SMS via l'API Orange."""
+        
+        # Validation des numéros avant envoi
+        number =  str(number)
+        self.validate_number(number)
 
-        return self.access_token
+        access_token = self.get_access_token()
 
-    def send_sms(self, recipient_phone_number, message):
-        """
-        Redéfinition de la méthode send_sms pour envoyer des SMS via l'API Orange.
-        """
-        self.ensure_one()
-        access_token = self.get_access_token()  # S'assurer que le token existe et est valide
 
-        url = f"https://api.orange.com/smsmessaging/v1/outbound/tel%3A%2B{self.sender_number}/requests"
-
+        url = f"https://api.orange.com/smsmessaging/v1/outbound/tel%3A%2B{str(self.sender_number)}/requests"
         headers = {
             'Authorization': f'Bearer {access_token}',
             'Content-Type': 'application/json'
         }
 
+        # Ajout de l'indicatif téléphonique pour l'API si nécessaire
         payload = {
             "outboundSMSMessageRequest": {
-                "address": f"tel:+{recipient_phone_number}",
-                "senderAddress": f"tel:+{self.sender_number}",
-                "senderName": self.sender_name,
+                "address": f"tel:+{str(number)}", 
+                "senderAddress": f"tel:+{str(self.sender_number)}",
+                #"senderName": self.sender_name,
                 "outboundSMSTextMessage": {
-                    "message": message
-                }
+                    "message": str(message)
+                },
+                "deliveryReceiptRequest": "true",
+                "notifyURL": "https://extranet-phoenixpharma.com//orange/smsdr"  # URL où l'API enverra l'accusé
             }
         }
 
         response = requests.post(url, headers=headers, json=payload)
 
         if response.status_code != 201:
-            raise UserError(f"Erreur lors de l'envoi du SMS : {response.text}")
+            # Utilisation de messages d'erreur plus spécifiques
+            error_message = response.json().get('error_description', response.text)
+            raise UserError(f"Erreur lors de l'envoi du SMS : {error_message}")
+            print('Reponse:', response.json())
+        
         return response.json()
 
+    def _send_sms_batch(self, messages):
+        """Redéfinition de la méthode _send_sms_batch pour envoyer des SMS en mode batch."""
+        access_token = self.get_access_token()
+        
+        url = f"https://api.orange.com/smsmessaging/v1/outbound/tel%3A%2B{self.sender_number}/requests"
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        }
+
+        # Validation de tous les numéros avant envoi
+        for msg in messages:
+            self.validate_number(str(msg['number']))
+
+        payload = {
+            "outboundSMSMessageRequest": [
+                {
+                    "address": f"tel:+{str(msg['number'])}",
+                    "senderAddress": f"tel:+{str(self.sender_number)}",
+                    #"senderName": self.sender_name,
+                    "outboundSMSTextMessage": {
+                        "message": msg['content']
+                    }
+                } for msg in messages
+            ]
+        }
+
+        response = requests.post(url, headers=headers, json=payload)
+
+        if response.status_code != 201:
+            # Utilisation de messages d'erreur plus spécifiques
+            error_message = response.json().get('error_description', response.text)
+            raise UserError(f"Erreur lors de l'envoi des SMS : {error_message}")
+        
+        sms_id = response.json().get('id')
+        return sms_id
+    
     def check_sms_balance(self):
         """
         Méthode pour vérifier le solde de SMS disponible via l'API Orange.
         """
-        access_token = self.get_access_token()  # S'assurer que le token est valide
+        try:
+            self._logger.info("Début de la vérification du solde SMS.")
+            
+            access_token = self.get_access_token()
+            
 
-        url = "https://api.orange.com/sms/admin/v1/contracts"
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Accept': 'application/json'
+            url = "https://api.orange.com/sms/admin/v1/contracts"
+            headers = {
+                'Authorization': f'Bearer {access_token}',
+                'Accept': 'application/json'
+            }
+            self._logger.info(f"Requête envoyée à l'URL : {url} avec les headers : {headers}")
+            response = requests.get(url, headers=headers)
+            self._logger.info(f"Réponse API : {response.status_code} - {response.text}")
+
+
+            if response.status_code == 200:
+                balance_data = response.json()
+                self._logger.info(f"Données du solde reçues : {balance_data}")
+                return balance_data
+            else:
+                error_message = response.json().get('error_description', response.text)
+                self._logger.error(f"Erreur lors de la vérification du solde SMS : {error_message}")
+                raise UserError(f"Erreur lors de la vérification du solde SMS : {response.text}")
+            
+        except Exception as e:
+            self._logger.error(f"Exception lors de la vérification du solde SMS : {str(e)}")
+            raise UserError(f"Erreur lors de la vérification du solde SMS : {str(e)}")
+        
+    def _get_sms_api_error_messages(self):
+        """Messages d'erreurs personnalisés pour l'API Orange"""
+        return {
+            'insufficient_credit': _("Vous n'avez pas assez de crédits pour envoyer des SMS."),
+            'wrong_number_format': _("Le format du numéro de téléphone est incorrect."),
+            'expired_contract': _("Votre contrat est expiré, veuillez acheter un nouveau forfait."),
         }
-
-        response = requests.get(url, headers=headers)
-
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise UserError(f"Erreur lors de la vérification du solde SMS : {response.text}")

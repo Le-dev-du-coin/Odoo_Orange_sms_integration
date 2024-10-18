@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- View sms.sender View Tree -->
+    <record id="view_sms_sender_tree" model="ir.ui.view">
+        <field name="name">view.sms.sender.tree</field>
+        <field name="model">sms.sender</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="sms_id"/>
+                <field name="recipient_phone_number"/>
+                <field name="message"/>
+                <field name="sent_at"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- View sms.sender form
+    <record id="view_sms_sender_form" model="ir.ui.view">
+        <field name="name">view.sms.sender.form</field>
+        <field name="model">sms.sender</field>
+        <field name="arch" type="xml">
+            <form string="Sms Sender">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="Name..."/>
+                        </h1>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record> -->
+
+    <!-- View sms.sender search -->
+    <record id="view_sms_sender_search" model="ir.ui.view">
+        <field name="name">view.sms.sender.search</field>
+        <field name="model">sms.sender</field>
+        <field name="arch" type="xml">
+            <search>
+                <group expand="1" string="Group By">
+                    <filter string="Date" name="sent_at" domain="[]" context="{'group_by':'sent_at'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

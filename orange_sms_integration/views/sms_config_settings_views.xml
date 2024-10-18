@@ -11,14 +11,13 @@
                         <field name="name"/>
                         <field name="client_id"/>
                         <field name="client_secret"/>
-                        <field name="api_key"/>
                         <field name="sender_name"/>
                         <field name="sender_number"/>
                         <field name="access_token"/>
                         <field name="token_expiration"/>
                     </group>
                     <group>
-                        <button name="check_sms_balance" type="object" string="Vérifier le solde SMS"/>
+                        <button name="get_access_token" type="object" string="Obtenir SMS" class="btn-primary"/>
                     </group>
                 </sheet>
             </form>
@@ -54,14 +53,14 @@
     </record>
 
     <!-- Vue formulaire pour le test de message SMS -->
-     <record id="view_sms_test_form" model="ir.ui.view">
+    <record id="view_sms_test_form" model="ir.ui.view">
         <field name="name">sms.test.form</field>
         <field name="model">sms.test</field>
         <field name="arch" type="xml">
             <form string="Test d'envoi de SMS">
                 <sheet>
                     <group>
-                        <field name="phone_number" placeholder="+223XXXXXXXX" required="1"/>
+                        <field name="phone_number" placeholder="223XXXXXXXX" required="1"/>
                         <field name="message" required="1"/>
                     </group>
                     <footer>
@@ -72,11 +71,26 @@
         </field>
     </record>
 
-    <!-- Action pour les accusés de réception -->
-    <record id="action_sms_receipt" model="ir.actions.act_window">
-        <field name="name">Accusés de réception SMS</field>
-        <field name="res_model">sms.receipt</field>
-        <field name="view_mode">tree</field>
+    <!-- Vue pour la configuration SMS Orange avec bouton de vérification du solde -->
+    <record id="sms_orange_form_view" model="ir.ui.view">
+        <field name="name">sms.orange.form</field>
+        <field name="model">sms.orange</field>
+        <field name="arch" type="xml">
+            <form string="Configuration SMS Orange">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="client_id"/>
+                        <field name="client_secret"/>
+                        <field name="sender_name"/>
+                        <field name="sender_number"/>
+                    </group>
+                    <footer>
+                        <button name="check_sms_balance" type="object" string="Vérifier le solde SMS" class="btn-primary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
     </record>
 
     <!-- Nouvelle action pour la configuration SMS avec vue tree et form -->
@@ -86,17 +100,66 @@
         <field name="view_mode">tree,form</field>
     </record>
 
+    <!-- Action pour les accusés de réception -->
+    <record id="action_sms_receipt" model="ir.actions.act_window">
+        <field name="name">Accusés de réception SMS</field>
+        <field name="res_model">sms.receipt</field>
+        <field name="view_mode">tree</field>
+    </record>
+
+    <!-- Vue modale pour la vérification du solde SMS -->
+    <record id="view_sms_balance_form" model="ir.ui.view">
+        <field name="name">sms.balance.form</field>
+        <field name="model">sms.balance</field>
+        <field name="arch" type="xml">
+            <form string="Vérification du Solde SMS">
+                <group>
+                    <field name="balance_info" readonly="1"/>
+                </group>
+                <footer>
+                    <button string="Fermer" class="btn-primary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action ouverture modal pour la vérification du solde SMS -->
+    <record id="action_sms_balance" model="ir.actions.act_window">
+        <field name="name">Vérification du Solde SMS</field>
+        <field name="res_model">sms.balance</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_sms_balance_form"/> 
+        <field name="target">new</field> 
+    </record>
+
     <!-- Action pour le test de SMS -->
     <record id="action_sms_test" model="ir.actions.act_window">
         <field name="name">Test d'envoi de SMS</field>
         <field name="res_model">sms.test</field>
         <field name="view_mode">form</field>
-        <field name="target">new</field> <!-- Ouvre dans une nouvelle fenêtre -->
+        <field name="target">new</field> 
     </record>
 
+    <!-- Action sms.sender -->
+    <record id="action_sms_sender" model="ir.actions.act_window">
+        <field name="name">Sms Sender</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">sms.sender</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="oe_view_nocontent_create">
+                There is no examples click here to add new Sms Sender.
+            </p>
+        </field>
+    </record>
+
+
     <!-- Menus -->
-    <menuitem id="menu_sms" name="SMS" sequence="10"/>
-    <menuitem id="menu_sms_config" name="Configuration SMS Orange" parent="menu_sms" action="action_sms_config" sequence="1"/>
+    <menuitem id="menu_sms_root" name="SMS" sequence="10"/>
+    <menuitem id="menu_sms_sender" name="Historique des envois" parent="menu_sms_root" action="action_sms_sender" sequence="11"/>
+    <menuitem id="menu_sms_balance" name="Vérification de solde" parent="menu_sms_root" action="action_sms_balance" sequence="12"/>
+    <menuitem id="menu_sms" name="Paramètre" parent="menu_sms_root" sequence="13"/>
     <menuitem id="menu_sms_receipts" name="Accusés de réception" parent="menu_sms" action="action_sms_receipt" sequence="2"/>
     <menuitem id="menu_sms_test" name="Test d'envoi de SMS" parent="menu_sms" action="action_sms_test" sequence="3"/>
+    <menuitem id="menu_sms_config" name="Parametre SMS Orange" parent="menu_sms" action="action_sms_config" sequence="5"/>
 </odoo>
